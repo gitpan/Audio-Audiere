@@ -23,28 +23,28 @@ sub new
   {
   # create a new audio stream from file or memory
   my $class = shift;
-  my ($file, $buffering) = @_;
+  my ($dev, $file, $buffering) = @_;
 
   my $self = bless { }, $class;
 
   if (!-e $file)
     {
     return Audio::Audiere::Error->new(
-      "Could not create stream from '$_[0]': No such file.");
+      "Could not create stream from '$_[1]': No such file.");
     }
   
   if (!-f $file)
     {
     return Audio::Audiere::Error->new(
-      "Could not create stream from '$_[0]': Not a file.");
+      "Could not create stream from '$_[1]': Not a file.");
     }
 
-  $self->{_stream} = _open($file,$buffering);
+  $self->{_stream} = _open($dev, $file,$buffering);
   
   if (!$self->{_stream})
     {
     return Audio::Audiere::Error->new(
-      "Unknown error. Could not create stream from '$_[0]'.");
+      "Unknown error. Could not create stream from '$_[1]'.");
     }
   $self;
   }
@@ -53,11 +53,11 @@ sub tone
   {
   # create a new audio stream of a tone with a certain frequenzy
   my $class = shift;
-  my ($freq) = @_;
+  my ($dev,$freq) = @_;
 
   my $self = bless { }, $class;
 
-  $self->{_stream} = _tone($freq);
+  $self->{_stream} = _tone($dev,$freq);
   
   if (!$self->{_stream})
     {
@@ -71,11 +71,11 @@ sub square_wave
   {
   # create a new audio stream of a square_wave tone with a certain frequenzy
   my $class = shift;
-  my ($freq) = @_;
+  my ($dev,$freq) = @_;
 
   my $self = bless { }, $class;
 
-  $self->{_stream} = _square_wave($freq);
+  $self->{_stream} = _square_wave($dev,$freq);
   
   if (!$self->{_stream})
     {
@@ -88,11 +88,11 @@ sub square_wave
 sub white_noise
   {
   # create a new audio stream playing white noise
-  my $class = shift;
+  my ($class,$dev) = @_;
 
   my $self = bless { }, $class;
 
-  $self->{_stream} = _white_noise();
+  $self->{_stream} = _white_noise($dev);
   
   if (!$self->{_stream})
     {
@@ -106,12 +106,11 @@ sub pink_noise
   {
   # create a new audio stream playing pink noise (which is noise with an
   # equal power distribution among octaves (logarithmic), not frequencies.
-
-  my $class = shift;
+  my ($class,$dev) = @_;
 
   my $self = bless { }, $class;
 
-  $self->{_stream} = _pink_noise();
+  $self->{_stream} = _pink_noise($dev);
   
   if (!$self->{_stream})
     {
@@ -132,7 +131,7 @@ sub DESTROY
 
 #  print ref($self->{_stream});
 #  use Devel::Peek; print Dump($self->{_stream});
-  _free_stream($self->{_stream}) if $self->{_stream};
+#  _free_stream($self->{_stream}) if $self->{_stream};
   }
 
 sub play
@@ -259,7 +258,80 @@ used on it's own, but via Audio::Audiere.
 
 =head1 METHODS
 
-Please see L<Audio::Audiere> for a list and description.
+=over 2
+
+=item error
+
+        if ($stream->error())
+          {
+          print "Fatal error: ", $stream->error(),"\n";
+          }
+
+Return the last error message, or undef for no error.
+
+=item play
+
+Start playing the stream.
+
+=item stop
+
+Stop playing the stream.
+
+=item isSeekable
+
+=item getLength
+
+=item isPlaying
+
+        while ($stream->isPlaying())
+          {
+          ...
+          }
+
+Returns true if the stream is still playing.
+
+=item getPosition
+
+Returns the current position in the stream.
+
+=item setPosition
+
+Set the current position in the stream.
+
+=item getFormat
+
+=item getSamples
+
+=item getVolume
+
+Returns the volume of the stream as a value between 0 and 1.
+
+=item setVolume
+
+Set the volume of the stream as a value between 0 and 1.
+
+=item getRepeat
+
+Returns true if the stream is repeating (aka looping).
+
+=item setRepeat
+
+        $stream->setRepeat(1);          # loop
+        $stream->setRepeat(0);          # don't loop
+
+If true, the stream will repeat (aka loop).
+
+=item setPan
+
+        $stream->setPan ( -1.0 );       # -1.0 = left, 0 = center, 1.0 = right
+
+Set the panning of the sound from -1.0 to +1.0.
+
+=item getPan
+
+Returns the current panning of the sound from -1.0 to +1.0. See L<setPan>.
+
+=back
 
 =head1 AUTHORS
 

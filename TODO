@@ -7,6 +7,10 @@ Audio::Audiere:
   from the XS code. I am sure this can be simplified and put entirely into
   XS, making the Perl code needless, as well as doing away with the hash
   ref (a scalar ref takes less memory and time to be created/destroyed)
+* let psp use command line options (and add keyboard control to set volume,
+  pan, pitch etc?)
+* add isMuted(), mute() to Stream
+* add Audio::Audiere::Stream::3D
 
 Please send me test-reports, your experiences with this and your ideas - I love
 to hear about my work!

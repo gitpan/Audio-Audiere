@@ -21,6 +21,15 @@ can_ok ('Audio::Audiere', qw/
   addPinkNoise
   addWhiteNoise
   getVersion
+  AUDIO_BUFFER
+  AUDIO_STREAM
+  FF_WAV
+  FF_AUTODETECT
+  FF_FLAC
+  FF_MP3
+  FF_OGG
+  FF_MOD
+  FF_AIFF
   /);
 
 my $au = Audio::Audiere->new( );

@@ -2,7 +2,7 @@
 
 # test noise generation
 
-use Test::More tests => 16;
+use Test::More tests => 32;
 use strict;
 
 BEGIN
@@ -19,12 +19,13 @@ use Audio::Audiere;
 my $au = Audio::Audiere->new( );
 
 print "# testing tone with 450 Hz\n";
-test_stream( $au->addTone(450) );
+my $t = test_stream( $au->addTone(450) );
 
 # any other test below segfaults (why?)
 
 #print "# testing square wave with 450 Hz\n";
-##test_stream( $au->addSquareWave(450) );
+test_stream( $au->addSquareWave(450) );
+
 #print "# testing white noise\n";
 #test_stream( $au->addWhiteNoise() );
 #print "# testing pink noise\n";
@@ -77,5 +78,7 @@ sub test_stream
 
   # getLength
   is ($stream->getLength() != 1, 1, 'getlength is not 1');
+
+  $stream;
   }
 

@@ -11,12 +11,6 @@
 /* ************************************************************************ */
 using namespace audiere;
 
-AudioDevice* device;
-
-typedef OutputStream* _AudioStream;
-
-/* ************************************************************************ */
-
 /*
 (C) by Tels <http://bloodgate.com/perl/> 
 */
@@ -26,37 +20,41 @@ MODULE = Audio::Audiere::Audiere_perl	PACKAGE = Audio::Audiere
 PROTOTYPES: DISABLE
 #############################################################################
         
-int
+AudioDevicePtr*
 _init_device(SV* classname, char* devicename, char* parameters)
-    CODE:
-	device = OpenDevice(devicename, parameters);
-	RETVAL = 1;
-	if (NULL == device)
-	  {
- 	  // failure
-	  RETVAL = 0;
-	  }
-    OUTPUT:
-        RETVAL
+  PREINIT:
+    AudioDevicePtr* device;
+    AudioDevice* dev;
+  CODE:
+    dev = OpenDevice(devicename, parameters);
+    if (!dev)
+      {
+      RETVAL = NULL;
+      }
+    else
+      {
+      device = new AudioDevicePtr(OpenDevice(devicename, parameters));
+      RETVAL = device;
+      }
+  OUTPUT:
+      RETVAL
 
 void
-_drop_device(SV* classname)
-    CODE:
-        device = NULL;
+_drop_device(SV* classname, AudioDevicePtr* device)
+  CODE:
+    delete device;
 
 const char*
 getVersion(SV* classname)
-  PREINIT:
   CODE:
     RETVAL = audiere::GetVersion();
   OUTPUT:	
     RETVAL
 
 const char*
-getName(SV* classname)
-  PREINIT:
+_get_name(AudioDevicePtr* device)
   CODE:
-    RETVAL = device->getName();
+    RETVAL = (*device)->getName();
   OUTPUT:	
     RETVAL
 
@@ -65,211 +63,179 @@ getName(SV* classname)
 
 MODULE = Audio::Audiere::Audiere_perl	PACKAGE = Audio::Audiere::Stream
 
-_AudioStream
-_open(char* filename, bool buffer)
-  PREINIT:
-    OutputStream* stream;
+OutputStreamPtr*
+_open(AudioDevicePtr* device, char* filename, bool buffer)
+    PREINIT:
+	OutputStreamPtr* stream;
   CODE:
-     stream = OpenSound(device, filename, buffer);
-     if (!stream) 
-       {
-       // failure
-       RETVAL = NULL;
-       }
-     else
-       {
-       RETVAL = stream;
-       }
+     stream = new OutputStreamPtr(OpenSound(*device, filename, buffer));
+     RETVAL = stream;
   OUTPUT:
     RETVAL
 
-_AudioStream
-_tone(double frequenzy)
+OutputStreamPtr*
+_tone(AudioDevicePtr* device, double frequenzy)
   PREINIT:
-    OutputStream* stream;
+    OutputStreamPtr* stream;
+    SampleSourcePtr* sample;
   CODE:
-     stream = OpenSound(device, CreateTone(frequenzy), false);
-     if (!stream) 
-       {
-       // failure
-       RETVAL = NULL;
-       }
-     else
-       {
-       RETVAL = stream;
-       }
+    sample = new SampleSourcePtr(CreateTone(frequenzy));
+    stream = new OutputStreamPtr(OpenSound(*device, *sample, true));
+    RETVAL = stream;
   OUTPUT:
     RETVAL
 
-_AudioStream
-_square_wave(double frequenzy)
+OutputStreamPtr*
+_square_wave(AudioDevicePtr* device, double frequenzy)
   PREINIT:
-    OutputStream* stream;
+    OutputStreamPtr* stream;
+    SampleSourcePtr* sample;
   CODE:
-     stream = OpenSound(device, CreateSquareWave(frequenzy), false);
-     if (!stream) 
-       {
-       // failure
-       RETVAL = NULL;
-       }
-     else
-       {
-       RETVAL = stream;
-       }
+    sample = new SampleSourcePtr(CreateSquareWave(frequenzy));
+    stream = new OutputStreamPtr(OpenSound(*device, *sample, true));
+    RETVAL = stream;
   OUTPUT:
     RETVAL
 
-_AudioStream
-_white_noise()
+OutputStreamPtr*
+_pink_noise(AudioDevicePtr* device)
   PREINIT:
-    OutputStream* stream;
+    OutputStreamPtr* stream;
+    SampleSourcePtr* sample;
   CODE:
-     stream = OpenSound(device, CreateWhiteNoise(), false);
-     if (!stream) 
-       {
-       // failure
-       RETVAL = NULL;
-       }
-     else
-       {
-       RETVAL = stream;
-       }
+     sample = new SampleSourcePtr(CreatePinkNoise());
+     stream = new OutputStreamPtr(OpenSound( *device, *sample, true));
+     RETVAL = stream;
   OUTPUT:
     RETVAL
 
-_AudioStream
-_pink_noise()
+OutputStreamPtr*
+_white_noise(AudioDevicePtr* device)
   PREINIT:
-    OutputStream* stream;
+    OutputStreamPtr* stream;
+    SampleSourcePtr* sample;
   CODE:
-     stream = OpenSound(device, CreatePinkNoise(), false);
-     if (!stream) 
-       {
-       // failure
-       RETVAL = NULL;
-       }
-     else
-       {
-       RETVAL = stream;
-       }
+     sample = new SampleSourcePtr(CreateWhiteNoise());
+     stream = new OutputStreamPtr(OpenSound( *device, *sample, true));
+     RETVAL = stream;
   OUTPUT:
     RETVAL
 
 
 void
-_free_stream(_AudioStream stream)
+_free_stream(OutputStreamPtr* stream)
   CODE:
-    stream->unref(); /* = NULL; */
+    delete stream;
 
 void
-_play(_AudioStream stream)
+_play(OutputStreamPtr* stream)
   CODE:
-    stream->play();
+    (*stream)->play();
 
 void
-_stop(_AudioStream stream)
+_stop(OutputStreamPtr* stream)
   CODE:
-    stream->stop();
+    (*stream)->stop();
 
 int
-_getLength(_AudioStream stream)
+_getLength(OutputStreamPtr* stream)
   CODE:
-    RETVAL = stream->getLength();
+    RETVAL = (*stream)->getLength();
   OUTPUT:
     RETVAL
 
 float
-_getPan(_AudioStream stream)
+_getPan(OutputStreamPtr* stream)
   CODE:
-    RETVAL = stream->getPan();
+    RETVAL = (*stream)->getPan();
   OUTPUT:
     RETVAL
 
 float
-_setPan(_AudioStream stream, float pan)
+_setPan(OutputStreamPtr* stream, float pan)
   CODE:
-    stream->setPan(pan);
-    RETVAL = stream->getPan();
+    (*stream)->setPan(pan);
+    RETVAL = (*stream)->getPan();
   OUTPUT:
     RETVAL
 
 
 float
-_getVolume(_AudioStream stream)
+_getVolume(OutputStreamPtr* stream)
   CODE:
-    RETVAL = stream->getVolume();
+    RETVAL = (*stream)->getVolume();
   OUTPUT:
     RETVAL
 
 float
-_setVolume(_AudioStream stream, float vol)
+_setVolume(OutputStreamPtr* stream, float vol)
   CODE:
-    stream->setVolume(vol);
-    RETVAL = stream->getVolume();
+    (*stream)->setVolume(vol);
+    RETVAL = (*stream)->getVolume();
   OUTPUT:
     RETVAL
 
 
 unsigned int
-_getPosition(_AudioStream stream)
+_getPosition(OutputStreamPtr* stream)
   CODE:
-    RETVAL = stream->getPosition();
+    RETVAL = (*stream)->getPosition();
   OUTPUT:
     RETVAL
 
 unsigned int
-_setPosition(_AudioStream stream, int pos)
+_setPosition(OutputStreamPtr* stream, int pos)
   CODE:
-    stream->setPosition(pos);
-    RETVAL = stream->getPosition();
+    (*stream)->setPosition(pos);
+    RETVAL = (*stream)->getPosition();
   OUTPUT:
     RETVAL
 
 
 float
-_getRepeat(_AudioStream stream)
+_getRepeat(OutputStreamPtr* stream)
   CODE:
-    RETVAL = stream->getRepeat();
+    RETVAL = (*stream)->getRepeat();
   OUTPUT:
     RETVAL
 
 bool
-_setRepeat(_AudioStream stream, bool rep)
+_setRepeat(OutputStreamPtr* stream, bool rep)
   CODE:
-    stream->setRepeat(rep);
-    RETVAL = stream->getRepeat();
+    (*stream)->setRepeat(rep);
+    RETVAL = (*stream)->getRepeat();
   OUTPUT:
     RETVAL
 
 
 float
-_getPitch(_AudioStream stream)
+_getPitch(OutputStreamPtr* stream)
   CODE:
-    RETVAL = stream->getPitchShift();
+    RETVAL = (*stream)->getPitchShift();
   OUTPUT:
     RETVAL
 
 float
-_setPitch(_AudioStream stream, double pitch)
+_setPitch(OutputStreamPtr* stream, double pitch)
   CODE:
-    stream->setPitchShift(pitch);
-    RETVAL = stream->getPitchShift();
+    (*stream)->setPitchShift(pitch);
+    RETVAL = (*stream)->getPitchShift();
   OUTPUT:
     RETVAL
 
 ##############################################################################
 
 bool
-_isPlaying(_AudioStream stream)
+_isPlaying(OutputStreamPtr* stream)
   CODE:
-    RETVAL = stream->isPlaying();
+    RETVAL = (*stream)->isPlaying();
   OUTPUT:
     RETVAL
 
 bool
-_isSeekable(_AudioStream stream)
+_isSeekable(OutputStreamPtr* stream)
   CODE:
-    RETVAL = stream->isSeekable();
+    RETVAL = (*stream)->isSeekable();
   OUTPUT:
     RETVAL
 
