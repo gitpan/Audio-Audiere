@@ -7,47 +7,30 @@ package Audio::Audiere;
 
 use strict;
 
-require DynaLoader;
 require Exporter;
 
 use vars qw/@ISA $VERSION @EXPORT_OK/;
-@ISA = qw/Exporter DynaLoader/;
+@ISA = qw/Exporter/;
 
 @EXPORT_OK = qw/AUDIO_STREAM AUDIO_BUFFER/;
 
-$VERSION = '0.01';
+$VERSION = '0.03';
 
-bootstrap Audio::Audiere $VERSION;
+package Audio::Audiere::Audiere_perl;
 
+use vars qw/@ISA/;
+require DynaLoader;
+@ISA = qw/DynaLoader/;
+
+bootstrap Audio::Audiere::Audiere_perl $Audio::Audiere::VERSION;
+
+package Audio::Audiere;
+
+#use Audio::Audiere::Audiere_perl;	# load our .so/.dll object
 use Audio::Audiere::Stream;
 
 use constant AUDIO_STREAM => 0;
 use constant AUDIO_BUFFER => 1;
-
-{
-  # protected vars
-  my $in_use = 0;
-
-  sub _alloc_device
-    {
-    if ($in_use > 0)
-      {
-      require Carp;
-      Carp::croak ("Audiere device already in use - cannot claim it again.");
-      }
-    $in_use ++;
-    }
-  sub _free_device
-    {
-    if ($in_use <= 0)
-      {
-      require Carp;
-      Carp::croak ("Audiere device not in use - cannot free it again.");
-      }
-    $in_use --;
-    }
-  sub _device_in_use { $in_use; }
-}
 
 ##############################################################################
 
@@ -58,11 +41,10 @@ sub new
   my $self = {}; bless $self, $class;
 
   $self->{error} = '';
-  _alloc_device();
-  if (!$self->_init_device( $_[0] ))
+  if (!$self->_init_device( $_[0] || '', $_[1] || '' ))
     {
-    $self->{error} = 'Cannot init Audiere device';
-    _free_device();
+    return
+      Audio::Audiere::Error->new("Could not init device '$_[0]'");
     }
 
   $self;
@@ -72,8 +54,14 @@ sub DESTROY
   {
   my $self = shift;
 
-  _free_device();
   $self->_drop_device();
+  }
+
+sub error
+  {
+  my $self = shift;
+
+  undef;
   }
 
 ##############################################################################
@@ -83,6 +71,36 @@ sub addStream
   my $self = shift;
 
   Audio::Audiere::Stream->new(@_);
+  }
+
+sub addTone
+  {
+  my $self = shift;
+  Audio::Audiere::Stream->tone(@_);
+  }
+
+sub addSquareWave
+  {
+  my $self = shift;
+  Audio::Audiere::Stream->square_wave(@_);
+  }
+
+sub addWhiteNoise
+  {
+  my $self = shift;
+  Audio::Audiere::Stream->white_noise();
+  }
+
+sub addPinkNoise
+  {
+  my $self = shift;
+  Audio::Audiere::Stream->pink_noise();
+  }
+
+sub dropStream
+  {
+  my $self = shift;
+  # TODO: streams are not registered, so nothing to do now
   }
 
 1; # eof
@@ -103,7 +121,7 @@ Audio::Audiere - use the Audiere sound library in Perl
 
 	my $audiere = Audio::Audiere->new();
 
-	if ($audiere->error() ne '')
+	if ($audiere->error())
 	  {
 	  die ("Cannot get audio device: ". print $audiere->error());
 	  }
@@ -112,12 +130,28 @@ Audio::Audiere - use the Audiere sound library in Perl
 
 	# stream the sound from the disk
 	my $stream = $audiere->addStream( 'media/sample.ogg', AUDIO_STREAM);
+
+	# always check for errors:
+	if ($stream->error())
+	  {
+	  print "Cannot load sound: ", $stream->error(),"\n";
+	  }
 	
 	# load sound into memory (if possible), this is also the default
 	my $sound = $audiere->addStream( 'media/effect.wav', AUDIO_BUFFER);
+	
+	# always check for errors:
+	if ($sound->error())
+	  {
+	  print "Cannot load sound: ", $sound->error(),"\n";
+	  }
 
 	$stream->setVolume(0.5);	# 50%
 	$stream->setRepeat(1);		# loooop
+	if ($stream->isSeekable())
+	  {
+	  $stream->setPosition(100);	# skip some bit
+	  }
 	$stream->play();		# start playing
 	
  	$sound->play();			# start playing
@@ -140,26 +174,76 @@ This package provides you with an interface to the audio library I<Audiere>.
 
 =item new()
 	
-	my $audiere = Audio::Audiere->new( $device );
+	my $audiere = Audio::Audiere->new( $devicename, $parameters );
 
 Creates a new object that holds the I<Audiere> driver to the optional
-C<$device>.
+C<$devicename> and the optional C$parameters>.
 
-There is only one of them and it will croak if you try to create a second one.
-When C<$audiere> goes out of scope or is set to undef, the Audiere driver will
+The latter is a comma-separated list like C<buffer=100,rate=44100>.
+
+When C<$audiere> goes out of scope or is set to undef, the device will
 be automatically released.
 
-In case you wonder how you can play multiple sounds at once: these are handled
-as separate streams, and once you have the Audiere driver, you can add (almost
-infinitely) many of them via L<addStream>.
+In case you wonder how you can play multiple sounds at once with only once
+device: these are handled as separate streams, and once you have the Audiere
+driver, you can add (almost infinitely) many of them via L<addStream> (or
+any of the other C<add...()> methods.
 
 =item getVersion
 
 Returns the version of Audiere you are using as string.
 
+=item getName
+
+Returns the name of the audio device, like 'oss' or 'directsound'.
+
 =item addStream
 
 	$stream = $audiere->addStream( $file, $stream_flag )
+
+Create a new sound stream object, and return it. See L<METHODS ON STREAMS>
+on what methods you can use to manipulate the stream object. Most popular
+will be C<play()>, of course :)
+
+You should always check for errors before using the stream object:
+	
+	if ($stream->error())
+	  {
+	  print "Cannot load sound: ", $stream->error(),"\n";
+	  }
+
+=item addTone
+
+	$audiere->addTone( $frequenzy );
+
+Create a stream object that produces a tone at the given C<$frequenzy>.
+
+See also L<addStream> and L<Methods on streams>.
+
+=item addSquareWave
+
+	$audiere->addSquareWave( $frequenzy );
+
+Create a stream object that produces a swaure wave at the given C<$frequenzy>.
+
+See also L<addStream> and L<Methods on streams>.
+
+=item addWhiteNoise
+
+	$audiere->addWhiteNoise( );
+
+Create a stream object that produces white noise.
+
+See also L<addStream> and L<Methods on streams>.
+
+=item addPinkNoise
+
+	$audiere->addPinkNoise( );
+
+Create a stream object that produces pink noise, which is noise with an equal
+power distribution among octaves (logarithmic), not frequencies.
+
+See also L<addStream> and L<Methods on streams>.
 
 =item dropStream
 
@@ -183,6 +267,15 @@ Methods on streamds must be called on stream objects that are returned by
 L<addStream>.
 
 =over 2
+
+=item error
+
+	if ($stream->error())
+	  {
+	  print "Fatal error: ", $stream->error(),"\n";
+	  }
+
+Return the last error message, or undef for no error.
 
 =item play
 
@@ -246,27 +339,7 @@ Returns the current panning of the sound from -1.0 to +1.0. See L<setPan>.
 
 =item setPitchShift
 
-=item getPitchShift
-
-=back
-
-=head2 Internal Methods
-
-You should not use these methods:
-
-=over 2
-
-=item _alloc_device()
-
-Increments the ref count on the driver to ensure only one is active at a time.
-
-=item _free_device()
-
-Decrements the ref count on the driver to ensure only one is active at a time.
-
-=item _device_in_use()
-
-Return true if the Audiere device is already in use.
+=item getPosition
 
 =back
 

@@ -8,11 +8,15 @@ LICENSE
 TODO
 NEW
 Makefile.PL
-Audiere.xs
-lib/Audio/Audiere.pm
-lib/Audio/Audiere/Stream.pm
+Audiere_perl.xs
+examples/psp
+lib/Audio/Audiere.pm		# the sound device
+lib/Audio/Audiere/Error.pm	# error messages
+lib/Audio/Audiere/Stream.pm	# one sound stream
 t/audiere.t			# general tests
 t/stream.t			# stream/sound tests
+t/tone_noise.t			# tone and noise generation tests
+t/error.t			# error handling
 t/test.wav
 META.yml			# Module meta-data (added by MakeMaker)
 typemap

@@ -43,10 +43,17 @@ Unpack the package with Winzip or similiar.
 
 =item Build the makefile
 
+The file C<Makefile.PL> does currently assume that Audiere's include files are
+installed in:
+
+  	C:\dev\audiere\audiere-1.9.3-win32\audiere-1.9.3-win32\include
+
+If this is not the case on your system, edit C<Makefile.PL>!
+
 Go to a console and change to the path where you
 unpacked the package, then type:
 
-	perl Makefile.PL.win32
+	perl Makefile.PL
 
 =item Compile it
 

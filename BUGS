@@ -1,10 +1,17 @@
 
-* Windows build does not work at all
+* Windows build is a bit tricky
 * On my system, giving a non-existing file will fail the tests in stream.t,
   so I am pretty sure it works ok. The problem is that I just can't hear any
   sound at all :/ (Xmms OTOH plays it just fine). I tried some MP3 or other
   file and none produeced any sound at all. Must be some Audiere problem...
-* Error handling is not done, invalid or non-existing files will crash it
+  (DH reports that it plays the sound fine on win32, so this is a problem on
+  my system... (getPosition() shows the position never advances...)
+* Error handling is not optimal yet
+* in-memory streams (and also duplicating of streams) is missing
+* adding a Tone, SquareWave, WhiteNoise or PinkNoise stream will segfault upon
+  adding another one of them. No idea why.
+* You can only open one device at a time, due to globals. Thats on the
+  TODOReallySoonNowList, though...
 
 Please send me test-reports, your experiences with this and your ideas - I love
 to hear about my work!

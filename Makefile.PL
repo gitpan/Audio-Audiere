@@ -3,8 +3,9 @@ use ExtUtils::MakeMaker;
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
 # the contents of the Makefile that is written.
 
-WriteMakefile(
-	'NAME'		=> 'Audio::Audiere',
+my $opt = {
+	'NAME'		=> 'Audio::Audiere::Audiere_perl',
+	'DISTNAME'	=> 'Audio-Audiere',
 	'VERSION_FROM'	=> 'lib/Audio/Audiere.pm',
 	'PREREQ_PM'	=> {
 			},
@@ -14,13 +15,27 @@ WriteMakefile(
 	'CC'		=> 'g++',
 	'LD'		=> 'g++',
 	'LIBS'		=> [ '-laudiere' ],
-
-#	'LDFLAGS'	=> '-static -L/usr/X11R6/lib -L/usr/local/lib/Irrlicht -lIrrlicht -lXxf86vm -lGL -lGLU -lX11 -lXext -ljpeg -lz',
-
 	'OPTIMIZE'	=> '-O2',
 	'DEFINE'	=> '', # e.g., '-DHAVE_SOMETHING'
 	'INC'		=> '',
-# makes no difference
+	'XS'		=> { 'Audiere_perl.xs' => 'Audiere_perl.c'},
 	'XSOPT'		=> '-C++', 
-#	'OBJECT'	=> '', 
-);
+
+# not neccessary: (?)
+#	'OBJECT'	=> 'Audiere_perl.o', 
+ };
+
+if ($^O =~ /win32/i)
+  {
+  $opt->{DEFINE} = ' -GX -TP ', 	# e.g., '-DHAVE_SOMETHING'
+  $opt->{INC} = '-IC:\dev\audiere\audiere-1.9.3-win32\audiere-1.9.3-win32\include',
+  delete $opt->{CC};
+  delete $opt->{LD};
+  }
+
+foreach (keys %$opt)
+  {
+  push @o, $_, $opt->{$_};
+  }
+
+WriteMakefile( @o );

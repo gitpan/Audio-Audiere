@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::More tests => 7;
+use Test::More tests => 5;
 use strict;
 
 BEGIN
@@ -16,21 +16,19 @@ BEGIN
 can_ok ('Audio::Audiere', qw/ 
   new
   addStream
+  addTone
+  addSquareWave
+  addPinkNoise
+  addWhiteNoise
   getVersion
   /);
 
-is (Audio::Audiere::_device_in_use(), 0, 'device not in use');
+my $au = Audio::Audiere->new( );
 
-{
-  my $au = Audio::Audiere->new( );
-
-  is (ref($au), 'Audio::Audiere', 'new seemed to work');
+is (ref($au), 'Audio::Audiere', 'new seemed to work');
   
-  is ($au->getVersion() =~ /^Audiere /, 1, 'version');
+is ($au->getVersion() =~ /^Audiere /, 1, 'version');
 
-  is (Audio::Audiere::_device_in_use(), 1, 'device now in use');
-}
-
-is (Audio::Audiere::_device_in_use(), 0, 'device not in use');
-
+print "# audio device is: ", $au->getName(),"\n";
+isnt (length($au->getName()), 0, 'some name returned');
 

@@ -2,7 +2,25 @@
 ############################################################################## 
 What's new in this version of Audio::Audiere:
 
-Since this is the first version, anything ;-)
+2004-03-17 v0.02 Tels - 27 tests (not released)
+  * win32 fixes (thanx to PODMASTER)
+    + added typemap entries for float and char* for Perl v5.6.x
+    + relocated XS code to Audiere_perl.xs and made the lib into
+      Audiere_perl.so respectively Audiere_perl.dll
+    + GetVersion() needs to be audiere::GetVersion()
+    + Makefile.PL fixups (that is stil suboptimal on win32)
+  * added for Streams: getPosition(), setPosition(), isSeekable()
+  * added Audio/Audiere/Error.pm for when creation of streams fail
+  * test errors with non-existing sound files
+2004-03-18 v0.03 Tels - 43 tests
+  * added to Audio::Audiere:
+    + createTone(), createSquareWave(), createWhiteNoise(), createPinkNoise()
+  * added examples/play.pl
+  * added $parameters to Audio::Audiere->new()
+  * pass $devicename and $parameters to _open_device()
+  * added error() to Audio::Audiere(), and make it return an
+    Audio::Audiere::Error object upon device creation errors
+  * added error.t to test device creation erorrs
 
 Please send me test-reports, your experiences with this and your ideas - I love
 to hear about my work!

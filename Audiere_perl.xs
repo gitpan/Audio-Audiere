@@ -1,9 +1,12 @@
+/* these two need to be on top for win32 */
+#include <stdlib.h>
+#include <audiere.h>
+
+/* normal perl includes */
+
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
-
-#include <stdlib.h>
-#include <audiere.h>
 
 /* ************************************************************************ */
 using namespace audiere;
@@ -18,16 +21,15 @@ typedef OutputStream* _AudioStream;
 (C) by Tels <http://bloodgate.com/perl/> 
 */
 
-MODULE = Audio::Audiere		PACKAGE = Audio::Audiere
+MODULE = Audio::Audiere::Audiere_perl	PACKAGE = Audio::Audiere
 
 PROTOTYPES: DISABLE
 #############################################################################
         
 int
-_init_device(SV* classname, SV* devicename)
+_init_device(SV* classname, char* devicename, char* parameters)
     CODE:
-	// TODO: if devicename ne '', pass it as argument
-	device = OpenDevice();
+	device = OpenDevice(devicename, parameters);
 	RETVAL = 1;
 	if (NULL == device)
 	  {
@@ -46,14 +48,22 @@ const char*
 getVersion(SV* classname)
   PREINIT:
   CODE:
-    RETVAL = GetVersion();
+    RETVAL = audiere::GetVersion();
+  OUTPUT:	
+    RETVAL
+
+const char*
+getName(SV* classname)
+  PREINIT:
+  CODE:
+    RETVAL = device->getName();
   OUTPUT:	
     RETVAL
 
 ##############################################################################
 # Stream code
 
-MODULE = Audio::Audiere		PACKAGE = Audio::Audiere::Stream
+MODULE = Audio::Audiere::Audiere_perl	PACKAGE = Audio::Audiere::Stream
 
 _AudioStream
 _open(char* filename, bool buffer)
@@ -73,10 +83,83 @@ _open(char* filename, bool buffer)
   OUTPUT:
     RETVAL
 
-void
-_free(_AudioStream stream)
+_AudioStream
+_tone(double frequenzy)
+  PREINIT:
+    OutputStream* stream;
   CODE:
-    stream = NULL;
+     stream = OpenSound(device, CreateTone(frequenzy), false);
+     if (!stream) 
+       {
+       // failure
+       RETVAL = NULL;
+       }
+     else
+       {
+       RETVAL = stream;
+       }
+  OUTPUT:
+    RETVAL
+
+_AudioStream
+_square_wave(double frequenzy)
+  PREINIT:
+    OutputStream* stream;
+  CODE:
+     stream = OpenSound(device, CreateSquareWave(frequenzy), false);
+     if (!stream) 
+       {
+       // failure
+       RETVAL = NULL;
+       }
+     else
+       {
+       RETVAL = stream;
+       }
+  OUTPUT:
+    RETVAL
+
+_AudioStream
+_white_noise()
+  PREINIT:
+    OutputStream* stream;
+  CODE:
+     stream = OpenSound(device, CreateWhiteNoise(), false);
+     if (!stream) 
+       {
+       // failure
+       RETVAL = NULL;
+       }
+     else
+       {
+       RETVAL = stream;
+       }
+  OUTPUT:
+    RETVAL
+
+_AudioStream
+_pink_noise()
+  PREINIT:
+    OutputStream* stream;
+  CODE:
+     stream = OpenSound(device, CreatePinkNoise(), false);
+     if (!stream) 
+       {
+       // failure
+       RETVAL = NULL;
+       }
+     else
+       {
+       RETVAL = stream;
+       }
+  OUTPUT:
+    RETVAL
+
+
+void
+_free_stream(_AudioStream stream)
+  CODE:
+    stream->unref(); /* = NULL; */
 
 void
 _play(_AudioStream stream)
@@ -103,12 +186,13 @@ _getPan(_AudioStream stream)
     RETVAL
 
 float
-_setPan(_AudioStream stream, double pan)
+_setPan(_AudioStream stream, float pan)
   CODE:
     stream->setPan(pan);
     RETVAL = stream->getPan();
   OUTPUT:
     RETVAL
+
 
 float
 _getVolume(_AudioStream stream)
@@ -118,12 +202,29 @@ _getVolume(_AudioStream stream)
     RETVAL
 
 float
-_setVolume(_AudioStream stream, double vol)
+_setVolume(_AudioStream stream, float vol)
   CODE:
     stream->setVolume(vol);
     RETVAL = stream->getVolume();
   OUTPUT:
     RETVAL
+
+
+unsigned int
+_getPosition(_AudioStream stream)
+  CODE:
+    RETVAL = stream->getPosition();
+  OUTPUT:
+    RETVAL
+
+unsigned int
+_setPosition(_AudioStream stream, int pos)
+  CODE:
+    stream->setPosition(pos);
+    RETVAL = stream->getPosition();
+  OUTPUT:
+    RETVAL
+
 
 float
 _getRepeat(_AudioStream stream)
@@ -139,6 +240,7 @@ _setRepeat(_AudioStream stream, bool rep)
     RETVAL = stream->getRepeat();
   OUTPUT:
     RETVAL
+
 
 float
 _getPitch(_AudioStream stream)
@@ -163,6 +265,14 @@ _isPlaying(_AudioStream stream)
     RETVAL = stream->isPlaying();
   OUTPUT:
     RETVAL
+
+bool
+_isSeekable(_AudioStream stream)
+  CODE:
+    RETVAL = stream->isSeekable();
+  OUTPUT:
+    RETVAL
+
 
 # EOF
 ##############################################################################
