@@ -2,7 +2,7 @@
 
 # test streaming from files, and error in stream creation 
 
-use Test::More tests => 20;
+use Test::More tests => 24;
 use strict;
 
 BEGIN
@@ -24,25 +24,30 @@ is ($stream->error(), undef, 'no error');
 
 is (ref($stream), 'Audio::Audiere::Stream', 'addStream seemed to work');
 
+is ($au->getMasterVolume(), 1, 'master volume is 100%');
+is (sprintf("%0.1f",$au->setMasterVolume(0.5)), 0.5, 'master volume is 50%');
+is (sprintf("%0.1f",$au->getMasterVolume()), 0.5, 'master volume still 50%');
+
 # repeat
 is ($stream->getRepeat(0), 0, 'getRepeat is 0');
 is ($stream->setRepeat(1), 1, 'repeat is now 1');
 is ($stream->getRepeat(), 1, 'repeat is still 1');
 
 $stream->setRepeat(0);
-$stream->play();
 
 # Position
 if ($stream->isSeekable())
   {
   is ($stream->getPosition(), 0, 'pos is 0');
   is ( $stream->setPosition(2), 2, 'pos is now 2');
-  is ( $stream->getPosition(), 2, 'pos is stil 2');
+  is ( $stream->getPosition(), 2, 'pos is still 2');
   }
 else
   {
   for (1..3) { is (1,0,'stream is not seekable!'); }
   }
+
+$stream->play();
 
 my $i = 0;
 while ($stream->isPlaying() && $i < 3)
@@ -69,6 +74,9 @@ is ( sprintf("%0.1f", $stream->getVolume()), '0.3', 'volume is still 0.3');
 
 # getLength
 is ($stream->getLength() != 1, 1, 'getlength is not 1');
+
+# stream registered?
+is ($au->{_streams}->{1}, $stream, 'stream registered'); 
 
 ##############################################################################
 # error when creating stream

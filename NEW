@@ -2,15 +2,22 @@
 ############################################################################## 
 What's new in this version of Audio::Audiere:
 
-2004-03-26 v0.04 Tels - 59 tests
-  * theoretically you could open more than one audio device (by calling
-    Audio::Audiere->new() with different device names), but a global variable
-    still prevented this in v0.03. Done, works now.
-  * added constants for the different supported fileformats, stream formats,
-    and doc and tests
-  * fixed the segfault with the tones/noise - the refactoring of the code to
-    use the RefPtr objects (in combination with new() and delete()) now also
-    makes the sound output on my system work - Yeah!
+2004-03-28 v0.05 Tels - 97 tests
+  * reorder tests in stream.t due to getPosition() varying while stream is
+    already playing (thanx PODMASTER)
+  * setVolume() and setPitchShift in Stream.pm default to 0, not 1 (prevented
+    setting them to 0)
+  * added for streams: setMute(), isMuted() - streams can now be muted (and
+    remember their volume while muted!)
+  * added Audio::Audiere::Stream::3D: streams with position, dampening etc.
+  * added in Audio::Audiere:
+    + add3DStream()
+    + setListenerPosition()/getListenerPosition()
+    + setListenerRotation()/getListenerRotation()
+    + setMasterVolume()/getMasterVolume()
+    + set3DMasterVolume()/get3DMasterVolume()
+  * upon update_3D_sound(), call update on all 3D streams
+  * added examples/3d.pl
 
 Please send me test-reports, your experiences with this and your ideas - I love
 to hear about my work!

@@ -22,7 +22,7 @@ use vars qw/@ISA $VERSION @EXPORT_OK/;
     SF_S16
   /;
 
-$VERSION = '0.04';
+$VERSION = '0.05';
 
 # a package to have Audiere_perl.dll under Win32, to avoid clash with the
 # Audiere.dll
@@ -38,6 +38,7 @@ bootstrap Audio::Audiere::Audiere_perl $Audio::Audiere::VERSION;
 package Audio::Audiere;
 
 use Audio::Audiere::Stream;
+use Audio::Audiere::Stream::3D;
 
 use constant AUDIO_STREAM => 0;
 use constant AUDIO_BUFFER => 1;
@@ -73,6 +74,14 @@ sub new
     return
       Audio::Audiere::Error->new("Could not init device '$_[0]'");
     }
+  
+  # for 3D support
+  $self->{_lpos} = [0,0,0];
+  $self->{_lrot} = [0,0,0];
+  $self->{_master} = 1;
+  $self->{_master3d} = 1;
+  $self->{_streams3d} = {};
+  $self->{_streams} = {};
 
   $self;
   }
@@ -92,49 +101,196 @@ sub error
   }
 
 ##############################################################################
+# 3D sound support
+
+sub set3DMasterVolume
+  {
+  my $self = shift;
+
+  $self->{_master3d} = abs($_[0] || 0);
+  foreach my $id (keys %{$self->{_streams3d}})
+    {
+    print "setting $id to $self->{_master3d}\n";
+    $self->{_streams3d}->{$id}->_set_master($self->{_master3d});
+    }
+  $self->{_master3d};
+  }
+
+sub setMasterVolume
+  {
+  my $self = shift;
+
+  $self->{_master} = abs($_[0] || 0);
+  foreach my $id (keys %{$self->{_streams}})
+    {
+    $self->{_streams}->{$id}->_set_master($self->{_master});
+    }
+  $self->{_master};
+  }
+
+sub get3DMasterVolume
+  {
+  my $self = shift;
+  
+  $self->{_master3d};
+  }
+
+sub getMasterVolume
+  {
+  my $self = shift;
+  
+  $self->{_master};
+  }
+
+sub add3DStream
+  {
+  my $self = shift;
+
+  my $stream = Audio::Audiere::Stream::3D->new($self,@_);
+
+  if ($stream->isa('Audio::Audiere::Stream::3D'))
+    {
+    # no error? so register the stream
+    $self->{_streams3d}->{ $stream->{_id} } = $stream;
+    }
+  $stream;
+  }
+
+sub update3D
+  {
+  my $self = shift;
+  
+  foreach my $id (keys %{$self->{_streams3d}})
+    {
+    $self->{_streams3d}->{$id}->_update();
+    }
+  }
+
+sub setListenerPosition
+  {
+  my $self = shift;
+
+  $self->{_lpos} = [ $_[0], $_[1], $_[2] ];
+  @{$self->{_lpos}};
+  }
+
+sub setListenerRotation
+  {
+  my $self = shift;
+  
+  $self->{_lrot} = [ $_[0], $_[1], $_[2] ];
+  @{$self->{_lrot}};
+  }
+
+sub getListenerPosition
+  {
+  my $self = shift;
+
+  @{$self->{_lpos}};
+  }
+
+sub getListenerRotation
+  {
+  my $self = shift;
+  
+  @{$self->{_lrot}};
+  }
+
+#############################################################################
+
+sub _device
+  {
+  # return ptr to the internal Audiere device
+  my $self = shift;
+
+  $self->{_device};
+  }
 
 sub addStream
   {
   my $self = shift;
 
-  Audio::Audiere::Stream->new($self->{_device},@_);
-  }
-
-sub addStream3D
-  {
-  my $self = shift;
-
-  Audio::Audiere::Stream::3D->new($self->{_device},@_);
+  my $stream = Audio::Audiere::Stream->new($self,@_);
+  
+  if ($stream->isa('Audio::Audiere::Stream'))
+    {
+    # no error? so register the stream
+    $self->{_streams}->{ $stream->{_id} } = $stream;
+    }
+  $stream;
   }
 
 sub addTone
   {
   my $self = shift;
-  Audio::Audiere::Stream->tone($self->{_device},@_);
+
+  my $stream = Audio::Audiere::Stream->tone($self,@_);
+
+  if ($stream->isa('Audio::Audiere::Stream'))
+    {
+    # no error? so register the stream
+    $self->{_streams}->{ $stream->{_id} } = $stream;
+    }
+  $stream;
   }
 
 sub addSquareWave
   {
   my $self = shift;
-  Audio::Audiere::Stream->square_wave($self->{_device},@_);
+
+  my $stream = Audio::Audiere::Stream->square_wave($self,@_);
+
+  if ($stream->isa('Audio::Audiere::Stream'))
+    {
+    # no error? so register the stream
+    $self->{_streams}->{ $stream->{_id} } = $stream;
+    }
+  $stream;
   }
 
 sub addWhiteNoise
   {
   my $self = shift;
-  Audio::Audiere::Stream->white_noise($self->{_device});
+
+  my $stream = Audio::Audiere::Stream->white_noise($self);
+
+  if ($stream->isa('Audio::Audiere::Stream'))
+    {
+    # no error? so register the stream
+    $self->{_streams}->{ $stream->{_id} } = $stream;
+    }
+  $stream;
   }
 
 sub addPinkNoise
   {
   my $self = shift;
-  Audio::Audiere::Stream->pink_noise($self->{_device});
+
+  my $stream = Audio::Audiere::Stream->pink_noise($self);
+
+  if ($stream->isa('Audio::Audiere::Stream'))
+    {
+    # no error? so register the stream
+    $self->{_streams}->{ $stream->{_id} } = $stream;
+    }
+  $stream;
   }
 
 sub dropStream
   {
   my $self = shift;
-  # TODO: streams are not registered, so nothing to do now
+  my $stream = shift;
+
+  if ($stream->isa('Audio::Audiere::Stream'))
+    {
+    # deregister stream
+    delete $self->{_streams}->{ $stream->{_id} };
+    }
+  elsif ($stream->isa('Audio::Audiere::Stream::3D'))
+    {
+    # deregister stream
+    delete $self->{_streams3d}->{ $stream->{_id} };
+    }
   }
 
 sub getName
@@ -322,10 +478,56 @@ can also do it like this or just have C<$stream> go out of scope:
 Create a copy of a stream. The streams will share the memory for the sound
 data, but have separate volumes, positions, pan etc.
 
+=item setMasterVolume
+
+	my $new_vol = $audiere->setMasterVolume(0.1);	# = 0.1 (10%)
+
+Sets a new master volume for all (non-3D) streams. The actual volume of a
+stream will be C<$master * $local> e.g. a stream with a volume of 0.5 and
+a master volume of also 0.5 would result in an actual volume of 0.25.
+
+=item getMasterVolume
+
+	my $vol = $audiere->getMasterVolume();
+
+Return the master volume for (non-3D) streams. See L<setMasterVolume> and
+L<set3DMasterVolume>.
+
 =back
 
-See L<Audio::Audiere::Stream> for a list of methods you can call on sound
-streams.
+=head2 Methods for 3D support
+
+=over 2
+
+=item add3DStream
+
+=item getListenerPosition
+
+=item setListenerPosition
+
+=item getListenerRotation
+
+=item setListenerRotation
+
+=item update3D
+
+=item set3dMasterVolume
+
+	my $new_vol = $audiere->set3DMasterVolume(0.1);	# = 0.1 (10%)
+
+Sets a new master volume for all 3D streams. The actual volume of a
+stream will be C<$master * $local> e.g. a stream with a volume of 0.5 and
+a master volume of also 0.5 would result in an actual volume of 0.25.
+
+=item get3DMasterVolume
+
+Return the master volume for all 3D streams. See L<set3DMasterVolume> and
+L<setMasterVolume>.
+
+=back
+
+See also L<Audio::Audiere::Stream> and L<Audio::Audiere::Stream::3D> for a
+list of methods you can call on 2D and 3D sound streams.
 
 =head1 AUTHORS
 

@@ -30,6 +30,17 @@ can_ok ('Audio::Audiere', qw/
   FF_OGG
   FF_MOD
   FF_AIFF
+  SF_U8
+  SF_S16
+
+  add3DStream
+  get3DMasterVolume
+  set3DMasterVolume
+  setListenerPosition
+  setListenerRotation
+  getListenerPosition
+  getListenerRotation
+  update3D
   /);
 
 my $au = Audio::Audiere->new( );
@@ -40,4 +51,5 @@ is ($au->getVersion() =~ /^Audiere /, 1, 'version');
 
 print "# audio device is: ", $au->getName(),"\n";
 isnt (length($au->getName()), 0, 'some name returned');
+  
 

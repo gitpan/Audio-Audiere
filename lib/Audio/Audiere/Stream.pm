@@ -6,18 +6,45 @@ package Audio::Audiere::Stream;
 # (C) by Tels <http://bloodgate.com/>
 
 use strict;
-
 require Exporter;
 
 use vars qw/@ISA $VERSION/;
 @ISA = qw/Exporter/;
 
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 use Audio::Audiere::Error;
 
 ##############################################################################
+# protected vars
+
+# each 3D sound stream will get a unique ID
+  {
+  my $id = 1;
+  sub ID { return $id++;}
+  }
+
+##############################################################################
 # constructors
+
+sub _check_file
+  {
+  my ($self, $file) = @_;
+
+  if (!-e $file)
+    {
+    return Audio::Audiere::Error->new(
+      "Could not create stream from '$_[1]': No such file.");
+    }
+
+  if (!-f $file)
+    {
+    return Audio::Audiere::Error->new(
+      "Could not create stream from '$_[1]': Not a file.");
+    }
+
+  undef;					# okay
+  }
 
 sub new
   {
@@ -27,25 +54,25 @@ sub new
 
   my $self = bless { }, $class;
 
-  if (!-e $file)
-    {
-    return Audio::Audiere::Error->new(
-      "Could not create stream from '$_[1]': No such file.");
-    }
-  
-  if (!-f $file)
-    {
-    return Audio::Audiere::Error->new(
-      "Could not create stream from '$_[1]': Not a file.");
-    }
+  my $rc = $self->_check_file($file);
+  return $rc if $rc;				# error? so return it!
 
-  $self->{_stream} = _open($dev, $file,$buffering);
+  $self->{_dev} = $dev;
+  $self->{_stream} = _open($dev->_device(), $file, $buffering);
   
   if (!$self->{_stream})
     {
     return Audio::Audiere::Error->new(
       "Unknown error. Could not create stream from '$_[1]'.");
     }
+  
+  $self->{_id} = ID();			# get a new ID
+ 
+  $self->{_muted} = 0;			# unmuted
+  $self->{_vol} = 1;
+  $self->{_master} = $dev->getMasterVolume();
+  $self->setVolume($self->{_vol});	# force master volume update
+  
   $self;
   }
 
@@ -57,13 +84,20 @@ sub tone
 
   my $self = bless { }, $class;
 
-  $self->{_stream} = _tone($dev,$freq);
+  $self->{_dev} = $dev;
+  $self->{_stream} = _tone($dev->_device(),$freq);
   
   if (!$self->{_stream})
     {
     return Audio::Audiere::Error->new(
       "Unknown error. Could not create stream with tone of frequenzy '$_[0]'.");
     }
+  $self->{_id} = ID();			# get a new ID
+ 
+  $self->{_muted} = 0;			# unmuted
+  $self->{_vol} = 1;
+  $self->{_master} = $dev->getMasterVolume();
+  $self->setVolume($self->{_vol});	# force master volume update
   $self;
   }
 
@@ -75,13 +109,20 @@ sub square_wave
 
   my $self = bless { }, $class;
 
-  $self->{_stream} = _square_wave($dev,$freq);
+  $self->{_dev} = $dev;
+  $self->{_stream} = _square_wave($dev->_device(),$freq);
   
   if (!$self->{_stream})
     {
     return Audio::Audiere::Error->new(
       "Unknown error. Could not create stream with square wave with frequenzy '$_[0]'.");
     }
+  $self->{_id} = ID();			# get a new ID
+ 
+  $self->{_muted} = 0;			# unmuted
+  $self->{_vol} = 1;
+  $self->{_master} = $dev->getMasterVolume();
+  $self->setVolume($self->{_vol});	# force master volume update
   $self;
   }
 
@@ -92,13 +133,20 @@ sub white_noise
 
   my $self = bless { }, $class;
 
-  $self->{_stream} = _white_noise($dev);
+  $self->{_dev} = $dev;
+  $self->{_stream} = _white_noise($dev->_device());
   
   if (!$self->{_stream})
     {
     return Audio::Audiere::Error->new(
       "Unknown error. Could not create stream with white noise.");
     }
+  $self->{_muted} = 0;			# unmuted
+  $self->{_id} = ID();			# get a new ID
+ 
+  $self->{_vol} = 1;
+  $self->{_master} = $dev->getMasterVolume();
+  $self->setVolume($self->{_vol});	# force master volume update
   $self;
   }
 
@@ -110,14 +158,31 @@ sub pink_noise
 
   my $self = bless { }, $class;
 
-  $self->{_stream} = _pink_noise($dev);
+  $self->{_dev} = $dev;
+  $self->{_stream} = _pink_noise($dev->_device());
   
   if (!$self->{_stream})
     {
     return Audio::Audiere::Error->new(
       "Unknown error. Could not create stream with pink noise.");
     }
+  $self->{_id} = ID();			# get a new ID
+  $self->{_muted} = 0;			# unmuted
+  $self->{_vol} = 1;
+  $self->{_master} = $dev->getMasterVolume();
+  $self->setVolume($self->{_stream},$self->{_vol}); # force master vol update
   $self;
+  }
+
+sub _set_master
+  {
+  my $self = shift;
+
+  $self->{_master} = abs($_[0] || 0);
+  if (!$self->{_muted})
+    {
+    _setVolume($self->{_stream},$self->{_vol} * $self->{_master});
+    }
   }
 
 sub error
@@ -129,9 +194,7 @@ sub DESTROY
   {
   my $self = shift;
 
-#  print ref($self->{_stream});
-#  use Devel::Peek; print Dump($self->{_stream});
-#  _free_stream($self->{_stream}) if $self->{_stream};
+  _free_stream($self->{_stream}) if $self->{_stream};
   }
 
 sub play
@@ -164,7 +227,24 @@ sub getRepeat
 sub getVolume
   {
   my $self = shift;
-  _getVolume($self->{_stream});
+
+  $self->{_vol};
+  }
+
+sub setMuted
+  {
+  my $self = shift;
+
+  $self->{_muted} = $_[0] ? 1 : 0;
+  if ($self->{_muted})
+    {
+    _setVolume($self->{_stream},0);			# mute the stream
+    }
+  else
+    {
+    # restore volume
+    _setVolume($self->{_stream},$self->{_vol} * $self->{_master});
+    }
   }
 
 sub getPosition
@@ -200,6 +280,12 @@ sub isSeekable
   _isSeekable($self->{_stream});
   }
 
+sub isMuted
+  {
+  my $self = shift;
+  $self->{_muted};
+  }
+
 ##############################################################################
 # set methods
 
@@ -218,7 +304,15 @@ sub setRepeat
 sub setVolume
   {
   my $self = shift;
-  _setVolume($self->{_stream},$_[0] || 1);
+
+  $self->{_vol} = abs($_[0] || 0);
+  $self->{_vol} = 1 if $self->{_vol} > 1;
+
+  if (!$self->{_muted})
+    {
+    _setVolume($self->{_stream},$self->{_vol} * $self->{_master});
+    }
+  $self->{_vol};
   }
 
 sub setPosition
@@ -230,7 +324,14 @@ sub setPosition
 sub setPitchShift
   {
   my $self = shift;
-  _setPitch($self->{_stream},$_[0] || 1);
+  _setPitch($self->{_stream},$_[0] || 0);
+  }
+
+sub id
+  {
+  my $self = shift;
+
+  $self->{_id};
   }
 
 1; # eof
@@ -245,7 +346,7 @@ Audio::Audiere::Stream - a sound (stream) in Audio::Audiere
 
 =head1 SYNOPSIS
 
-See Audio::Audiere for usage and a list of methods you can use on streams.
+See Audio::Audiere for usage.
 
 =head1 EXPORTS
 
@@ -277,9 +378,22 @@ Start playing the stream.
 
 Stop playing the stream.
 
+=item getLength
+
 =item isSeekable
 
-=item getLength
+	$stream->setPosition(100) if $stream->isSeekable();
+
+Returns whether the stream is seekable or not. 
+
+=item isMuted
+	
+	if ($stream->isMuted())
+	  {
+	  ...
+	  }
+
+Returns true if the stream is currently muted.
 
 =item isPlaying
 
@@ -331,6 +445,15 @@ Set the panning of the sound from -1.0 to +1.0.
 
 Returns the current panning of the sound from -1.0 to +1.0. See L<setPan>.
 
+=item setMuted
+
+	$stream->setMuted (1);		# mute the stream
+	...	
+	$stream->setMuted (0);		# unmute the stream again
+
+Sets the stream to muted or unmuted. The stream will continue to play
+inaudible and also remembers it's volume, which will be restored on unmute.
+
 =back
 
 =head1 AUTHORS
@@ -339,7 +462,8 @@ Returns the current panning of the sound from -1.0 to +1.0. See L<setPan>.
 
 =head1 SEE ALSO
 
-L<Audio::Audiere>, L<http://audiere.sf.net/>.
+L<Audio::Audiere>, L<Audio::Audiere::Stream>, L<Audio::Audiere::Stream::3D>,
+L<http://audiere.sf.net/>.
 
 =cut
 
