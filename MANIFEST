@@ -1,0 +1,18 @@
+BUGS
+CHANGES
+MANIFEST
+README
+README.win32
+SIGNATURE
+LICENSE
+TODO
+NEW
+Makefile.PL
+Audiere.xs
+lib/Audio/Audiere.pm
+lib/Audio/Audiere/Stream.pm
+t/audiere.t			# general tests
+t/stream.t			# stream/sound tests
+t/test.wav
+META.yml			# Module meta-data (added by MakeMaker)
+typemap

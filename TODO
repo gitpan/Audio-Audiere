@@ -1,0 +1,15 @@
+
+############################################################################## 
+Audio::Audiere:
+
+* add error handling (e.g. if the file to be played does not exist or is
+  invalid)
+* Audio/Audiere/Stream is a (needless?) hash ref and mirrors all functions
+  from the XS code. I am sure this can be simplified and put entirely into
+  XS, making the Perl code needless, as well as doing away with the hash
+  ref (a scalar ref takes less memory and time to be created/destroyed)
+
+Please send me test-reports, your experiences with this and your ideas - I love
+to hear about my work!
+
+Tels <http://bloodgate.com/>

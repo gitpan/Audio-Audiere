@@ -1,0 +1,44 @@
+This file contains message digests of all files listed in MANIFEST,
+signed via the Module::Signature module, version 0.38.
+
+To verify the content in this distribution, first make sure you have
+Module::Signature installed, then type:
+
+    % cpansign -v
+
+It would check each file's integrity, as well as the signature's
+validity.  If "==> Signature verified OK! <==" is not displayed,
+the distribution may already have been compromised, and you should
+not run its Makefile.PL or Build.PL.
+
+-----BEGIN PGP SIGNED MESSAGE-----
+
+SHA1 56d53251b89be2f365e6b3354c9eefd2501b0c2c Audiere.xs
+SHA1 e80c804409438ba1c1e4e0f4f376c5a918a78b42 BUGS
+SHA1 e4eabcd5dd8177c5189a7639b331bab565064d9c CHANGES
+SHA1 d6a6c30ee6d9ba6b9afab8bbf6a25e1b23c744e0 LICENSE
+SHA1 24b1787fa5025769efbb65284071d3e00521c48a MANIFEST
+SHA1 e55880fa4699ee206ecb59424b0069ea1e08b34f META.yml
+SHA1 302e3809f58dea447131340294453524a6356963 Makefile.PL
+SHA1 7258cd8acd316c66745b11dff1a3e58be5d26519 NEW
+SHA1 31090e7d48f96e2dd23445fc5f9fd79dfaec19ec README
+SHA1 f07b4b03fdc011fa21c071b5081f52290faaf477 README.win32
+SHA1 1efa5c5c43a3a8c3e61f19dd432e5f9d800e5a61 TODO
+SHA1 107137df79d7e6e2685091a144c75366408ef19e lib/Audio/Audiere.pm
+SHA1 05f6e7dfe10baea1cdd9dde4281e92f1720a3c6f lib/Audio/Audiere/Stream.pm
+SHA1 2735ee5a5d5b6f89c18292bbfd619ca071914c99 t/audiere.t
+SHA1 0447cdff85e92075dbfd8d7185b75da2f9d408b7 t/stream.t
+SHA1 d67d2b4f4ad1aa8cf432bbcf91f53b2683f948b9 t/test.wav
+SHA1 c8b791a30b169db53fe1ccd3efdd547cc1e26dec typemap
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.2.2-rc1-SuSE (GNU/Linux)
+Comment: When cryptography is outlawed, bayl bhgynjf jvyy unir cevinpl.
+
+iQEVAwUBQFYfJncLPEOTuEwVAQF/tQf/Qmv5fi+2ZU2KC8SN9NOcNM64EMZREJCF
+fyRcugR9/7+ffNkE6qai7lKMg019yQKWLhrS5oX9I4A5HMURPApfE8wamLesSZd7
+NilyaFSfZRK3Xs7d+kcK4zr1qSGRXN6zDAYBq3I9hn5YCEzwFQNB+Mnxaohkykbq
+bkQU2hYUoFzL1UnsxLbi8LOz5O7kky0BUoD2G/BqlBlT6cbvZuTdxxkbLaqSxpfA
+X0d6mJmn9sG4JC6/yUJ5V1d3hfpIiCsUmfNPOxB9Nv/YHuMle/ou5gKJ+/fDmtUI
+KaoP67LkzwCZY541+mSY3cFwG9qBFBt0yR20a4FHVZX3qxBE1sF1Cg==
+=dlew
+-----END PGP SIGNATURE-----

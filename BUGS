@@ -1,0 +1,12 @@
+
+* Windows build does not work at all
+* On my system, giving a non-existing file will fail the tests in stream.t,
+  so I am pretty sure it works ok. The problem is that I just can't hear any
+  sound at all :/ (Xmms OTOH plays it just fine). I tried some MP3 or other
+  file and none produeced any sound at all. Must be some Audiere problem...
+* Error handling is not done, invalid or non-existing files will crash it
+
+Please send me test-reports, your experiences with this and your ideas - I love
+to hear about my work!
+
+Tels <http://bloodgate.com/>

@@ -1,0 +1,12 @@
+
+############################################################################## 
+Audio::Audiere
+
+2004-03-15 v0.01 Tels - 21 tests (first version)
+  * first working draft - all functions should be supported, except error
+    handling
+
+Please send me test-reports, your experiences with this and your ideas - I love
+to hear about my work!
+
+Tels <http://bloodgate.com/>
